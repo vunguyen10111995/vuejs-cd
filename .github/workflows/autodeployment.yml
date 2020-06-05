@@ -1,0 +1,89 @@
+# name: Vue.js Autodeployment
+# on:
+#   push:
+#     branches: [master]
+#   pull_request:
+#     branches: [master]
+
+# defaults:
+#   run:
+#     working-directory: ./
+# jobs:
+#   build:
+#     name: bundle
+#     runs-on: ubuntu-latest
+#     steps:
+#     - name: Checkout
+#       uses: actions/checkout@v2
+#     - name: Install dependencies and build
+#       run: |
+#         echo "Check out to project"
+#         yarn cache clean
+#         yarn
+#         yarn build
+#     - name: Deploy to Server
+#       env:
+#         SSH_PRIVATE_KEY: ${{ secrets.PRIVATE_DEPLOY_KEY }}
+#         REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+#         REMOTE_USER: ${{ secrets.REMOTE_USER }}
+#       run: |
+#         mkdir -p ~/.ssh/
+#         touch ~/.ssh/known_hosts
+#         touch ~/.ssh/config
+#         echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+#         echo -e "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+#         chmod 600 ~/.ssh/id_rsa
+#         chmod 700 ~/.ssh
+#         rsync -avzr ${PWD}/dist $REMOTE_USER@$REMOTE_HOST:~/vue-deployment --delete
+
+name: Vue.js Autodeployment
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+defaults:
+  run:
+    working-directory: ./
+jobs:
+  build:
+    name: bundle
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Install dependencies and build
+      run: |
+        echo "Check out to project"
+        yarn cache clean
+        yarn
+        yarn build
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist
+        path: dist
+  deploy:
+    needs: build
+    name: deploy
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/download-artifact@v2
+      with:
+        path: ./
+    - name: Deploy to Server
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.PRIVATE_DEPLOY_KEY }}
+        REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+        REMOTE_USER: ${{ secrets.REMOTE_USER }}
+      run: |
+        mkdir -p ~/.ssh/
+        touch ~/.ssh/known_hosts
+        touch ~/.ssh/config
+        echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+        echo -e "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        chmod 700 ~/.ssh
+        rsync -avzr ${PWD}/dist $REMOTE_USER@$REMOTE_HOST:~/vue-deployment --delete

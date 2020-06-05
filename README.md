@@ -1,4 +1,4 @@
-# vuejs-demo
+# AUTO DEPLOYMENT WITH GITHUB ACTIONS
 
 ## Project setup
 ```
